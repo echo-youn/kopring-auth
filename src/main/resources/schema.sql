@@ -1,0 +1,8 @@
+CREATE TABLE Account(
+    seq BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    age INT NULL,
+    sex VARCHAR(10) NULL,
+    roles VARCHAR(255) NULL
+);
