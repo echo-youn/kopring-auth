@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 @Service
 class UserDetailsServiceImpl(
     private val accountRepository: AccountRepository,
+    // Implementation is BCryptPasswordEncoder.
     private val passwordEncoder: PasswordEncoder,
     private val roleHierarchy: RoleHierarchy
 ): UserDetailsService {
@@ -23,11 +24,29 @@ class UserDetailsServiceImpl(
 
         return User.builder()
             .username(accounts.username)
-            .password(passwordEncoder.encode(accounts.password))
+            .password(accounts.password)
             .authorities(getAuthorities(accounts)).build()
     }
 
+    fun registUser(user: Account): Account {
+        accountRepository.getAccountByUsername(user.username).also {
+            if(it == null) {
+                return@also
+            }
+
+            if (it.seq != 0L) {
+                throw IllegalArgumentException("Already exists.")
+            }
+        }
+
+        user.password = passwordEncoder.encode(user.password)
+        return accountRepository.save(user)
+    }
+
     fun getAuthorities(user: Account): Set<GrantedAuthority> {
+        if(user.roles.isNullOrBlank()) {
+            return setOf(SimpleGrantedAuthority("ROLE_GUEST"))
+        }
         val reduced = user.roles.split(",").fold(setOf<GrantedAuthority>()) { acc, role ->
             val role = SimpleGrantedAuthority(role.uppercase())
             val reachable = roleHierarchy.getReachableGrantedAuthorities(mutableSetOf(role)).toSet()
